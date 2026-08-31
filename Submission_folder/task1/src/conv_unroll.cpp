@@ -7,42 +7,38 @@ void conv_unroll(const float* in, float* out, const float* ker,
     const int p = K / 2;
     const int in_stride = W + 2 * p;  // padded row stride
 
-    for (int ky = 0; ky < K; ++ky) {
-        for (int kx = 0; kx < K; ++kx) {
-            float kval = ker[ky * K + kx];
-            if(kx==0 && ky==0){
-                for (int oy = 0; oy < H; ++oy) {
-                    const float* in_row = in + (oy + ky) * in_stride + kx;
-                    float* out_row = out + oy * W;
-                    int ox = 0;
-                    for (; ox < W; ox += 8) {
-                        out_row[ox + 0] = in_row[ox + 0] * kval;
-                        out_row[ox + 1] = in_row[ox + 1] * kval;
-                        out_row[ox + 2] = in_row[ox + 2] * kval;
-                        out_row[ox + 3] = in_row[ox + 3] * kval;
-                        out_row[ox + 4] = in_row[ox + 4] * kval;
-                        out_row[ox + 5] = in_row[ox + 5] * kval;
-                        out_row[ox + 6] = in_row[ox + 6] * kval;
-                        out_row[ox + 7] = in_row[ox + 7] * kval;
-                    }
-                }
-                continue;
-            }
-            for (int oy = 0; oy < H; ++oy) {
-                const float* in_row = in + (oy + ky) * in_stride + kx;
-                float* out_row = out + oy * W;
-                int ox = 0;
-                for (; ox < W; ox += 8) {
-                    out_row[ox + 0] += in_row[ox + 0] * kval;
-                    out_row[ox + 1] += in_row[ox + 1] * kval;
-                    out_row[ox + 2] += in_row[ox + 2] * kval;
-                    out_row[ox + 3] += in_row[ox + 3] * kval;
-                    out_row[ox + 4] += in_row[ox + 4] * kval;
-                    out_row[ox + 5] += in_row[ox + 5] * kval;
-                    out_row[ox + 6] += in_row[ox + 6] * kval;
-                    out_row[ox + 7] += in_row[ox + 7] * kval;
+    for (int oy = 0; oy < H; ++oy) {
+        for (int ox = 0; ox < W; ox += 8) {
+            float acc0 = 0.0f;
+            float acc1 = 0.0f;
+            float acc2 = 0.0f;
+            float acc3 = 0.0f;
+            float acc4 = 0.0f;
+            float acc5 = 0.0f;
+            float acc6 = 0.0f;
+            float acc7 = 0.0f;
+            for (int ky = 0; ky < K; ++ky) {
+                for (int kx = 0; kx < K; ++kx) {
+                    const float weight = ker[ky * K + kx];
+                    const float* row = &in[(oy + ky) * in_stride + (ox + kx)];
+                    acc0 += row[0] * weight;
+                    acc1 += row[1] * weight;
+                    acc2 += row[2] * weight;
+                    acc3 += row[3] * weight;
+                    acc4 += row[4] * weight;
+                    acc5 += row[5] * weight;
+                    acc6 += row[6] * weight;
+                    acc7 += row[7] * weight;
                 }
             }
+            out[oy*W + ox + 0] = acc0;
+            out[oy*W + ox + 1] = acc1;
+            out[oy*W + ox + 2] = acc2;
+            out[oy*W + ox + 3] = acc3;
+            out[oy*W + ox + 4] = acc4;
+            out[oy*W + ox + 5] = acc5;
+            out[oy*W + ox + 6] = acc6;
+            out[oy*W + ox + 7] = acc7;
         }
     }
 }
