@@ -20,7 +20,7 @@ void conv_unroll(const float* in, float* out, const float* ker,
             for (int ky = 0; ky < K; ++ky) {
                 for (int kx = 0; kx < K; ++kx) {
                     const float weight = ker[ky * K + kx];
-                    const float* row = &in[(oy + ky) * in_stride + (ox + kx)];
+                    const float* row = in + (oy + ky) * in_stride + (ox + kx);
                     acc0 += row[0] * weight;
                     acc1 += row[1] * weight;
                     acc2 += row[2] * weight;
