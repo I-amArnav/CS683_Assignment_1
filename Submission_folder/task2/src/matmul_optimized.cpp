@@ -1,6 +1,6 @@
 #include <immintrin.h>
 
-void matmul_simd(const float* A, const float* B, float* C,
+void matmul_optimized(const float* A, const float* B, float* C,
                  int M, int N, int K, int lda, int ldb, int ldc) {
     
     int i = 0;

@@ -6,7 +6,7 @@ void matmul_prefetch(const float* A, const float* B, float* C,
     const int BN = 32;
     const int BK = 32;
     
-    const int PREFETCH_DIST = 64;
+    const int PREFETCH_DIST = 16;
 
     for (int kk = 0; kk < K; kk += BK) {
         int k_end = (kk + BK < K) ? (kk + BK) : K;
