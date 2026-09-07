@@ -10,8 +10,7 @@ void conv_optimized(const float* in, float* out, const float* ker,
     const int in_stride = W + 2 * p;
     const int TILE_H = 16;
     const int TILE_W = 256;
-    const int VEC_UNROLL = 4;
-    const int UNROLL_W = 8 * VEC_UNROLL;
+    const int UNROLL_W = 32;
 
     for (int oy0 = 0; oy0 < H; oy0 += TILE_H) {
         const int oy_end = (oy0 + TILE_H < H) ? oy0 + TILE_H : H;

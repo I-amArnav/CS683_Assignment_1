@@ -1,4 +1,3 @@
-// conv_simd.cpp  STAGE 4: SIMD with AVX2 intrinsics
 #include <immintrin.h>
 
 #include "convolution.h"

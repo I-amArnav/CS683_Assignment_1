@@ -1,35 +1,26 @@
 #include "convolution.h"
+#include <algorithm>
 
 void conv_tile(const float* in, float* out, const float* ker,
                int H, int W, int K) {
-
     const int p = K / 2;
-    const int in_stride = W + 2 * p;
-    const int TILE_H = 16;
-    const int TILE_W = 256;
+    const int in_stride = W + 2 * p;  // padded row stride
+    const int TILE_Y = 64; 
+    const int TILE_X = 64;
 
-    for (int oy0 = 0; oy0 < H; oy0 += TILE_H) {
-        const int oy_end = (oy0 + TILE_H < H) ? oy0 + TILE_H : H;
-
-        for (int ox0 = 0; ox0 < W; ox0 += TILE_W) {
-            const int ox_end = (ox0 + TILE_W < W) ? ox0 + TILE_W : W;
-
-            for (int oy = oy0; oy < oy_end; ++oy) {
-                float* out_row = out + oy * W + ox0;
-                for (int ox = ox0; ox < ox_end; ++ox) {
-                    out_row[ox - ox0] = 0.0f;
-                }
-            }
-            for (int ky = 0; ky < K; ++ky) {
-                for (int kx = 0; kx < K; ++kx) {
-                    const float kval = ker[ky * K + kx];
-                    for (int oy = oy0; oy < oy_end; ++oy) {
-                        const float* in_row = in + (oy + ky) * in_stride + ox0 + kx;
-                        float* out_row = out + oy * W + ox0;
-                        for (int ox = ox0; ox < ox_end; ++ox) {
-                            out_row[ox - ox0] += in_row[ox - ox0] * kval;
+    for (int ty = 0; ty < H; ty += TILE_Y) {
+        int max_oy = std::min(ty + TILE_Y, H);        
+        for (int tx = 0; tx < W; tx += TILE_X) {
+            int max_ox = std::min(tx + TILE_X, W);
+            for (int oy = ty; oy < max_oy; ++oy) {
+                for (int ox = tx; ox < max_ox; ++ox) {
+                    float acc = 0.0f;
+                    for (int ky = 0; ky < K; ky++) {
+                        for (int kx = 0; kx < K; kx++) {
+                            acc += in[(oy + ky) * in_stride + (ox + kx)] * ker[ky * K + kx];
                         }
                     }
+                    out[oy * W + ox] = acc;
                 }
             }
         }
