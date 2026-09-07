@@ -2,8 +2,7 @@
 #include <cstdint>
 #include <algorithm>
 
-static inline void gemm_microkernel_3x4(
-    const float* __restrict__ a0, const float* __restrict__ a1, const float* __restrict__ a2,
+static inline void helper_3x4(const float* __restrict__ a0, const float* __restrict__ a1, const float* __restrict__ a2,
     const float* __restrict__ b0, const float* __restrict__ b1, const float* __restrict__ b2, const float* __restrict__ b3,
     float* __restrict__ c0, float* __restrict__ c1, float* __restrict__ c2,
     int K, bool beta_zero) {
@@ -31,14 +30,17 @@ static inline void gemm_microkernel_3x4(
         c00 = _mm256_fmadd_ps(va0, vb, c00);
         c10 = _mm256_fmadd_ps(va1, vb, c10);
         c20 = _mm256_fmadd_ps(va2, vb, c20);
+
         vb = _mm256_loadu_ps(b1); 
         c01 = _mm256_fmadd_ps(va0, vb, c01);
         c11 = _mm256_fmadd_ps(va1, vb, c11);
         c21 = _mm256_fmadd_ps(va2, vb, c21);
+
         vb = _mm256_loadu_ps(b2); 
         c02 = _mm256_fmadd_ps(va0, vb, c02);
         c12 = _mm256_fmadd_ps(va1, vb, c12);
         c22 = _mm256_fmadd_ps(va2, vb, c22);
+
         vb = _mm256_loadu_ps(b3); 
         c03 = _mm256_fmadd_ps(va0, vb, c03);
         c13 = _mm256_fmadd_ps(va1, vb, c13);
@@ -52,21 +54,23 @@ static inline void gemm_microkernel_3x4(
         c00 = _mm256_fmadd_ps(va0, vb, c00);
         c10 = _mm256_fmadd_ps(va1, vb, c10);
         c20 = _mm256_fmadd_ps(va2, vb, c20);
+
         vb = _mm256_loadu_ps(b1 + 8); 
         c01 = _mm256_fmadd_ps(va0, vb, c01);
         c11 = _mm256_fmadd_ps(va1, vb, c11);
         c21 = _mm256_fmadd_ps(va2, vb, c21);
+
         vb = _mm256_loadu_ps(b2 + 8); 
         c02 = _mm256_fmadd_ps(va0, vb, c02);
         c12 = _mm256_fmadd_ps(va1, vb, c12);
         c22 = _mm256_fmadd_ps(va2, vb, c22);
+
         vb = _mm256_loadu_ps(b3 + 8); 
         c03 = _mm256_fmadd_ps(va0, vb, c03);
         c13 = _mm256_fmadd_ps(va1, vb, c13);
         c23 = _mm256_fmadd_ps(va2, vb, c23);
 
-        a0 += 16; a1 += 16; a2 += 16;
-        b0 += 16; b1 += 16; b2 += 16; b3 += 16;
+        a0 += 16;a1 += 16;a2 += 16;b0 += 16; b1+= 16; b2 += 16;b3+= 16;
     }
 
     if (p+7 < K) {
@@ -75,14 +79,28 @@ static inline void gemm_microkernel_3x4(
         __m256 va2 = _mm256_loadu_ps(a2);
         __m256 vb;
         
-        vb = _mm256_loadu_ps(b0); c00 = _mm256_fmadd_ps(va0, vb, c00); c10 = _mm256_fmadd_ps(va1, vb, c10); c20 = _mm256_fmadd_ps(va2, vb, c20);
-        vb = _mm256_loadu_ps(b1); c01 = _mm256_fmadd_ps(va0, vb, c01); c11 = _mm256_fmadd_ps(va1, vb, c11); c21 = _mm256_fmadd_ps(va2, vb, c21);
-        vb = _mm256_loadu_ps(b2); c02 = _mm256_fmadd_ps(va0, vb, c02); c12 = _mm256_fmadd_ps(va1, vb, c12); c22 = _mm256_fmadd_ps(va2, vb, c22);
-        vb = _mm256_loadu_ps(b3); c03 = _mm256_fmadd_ps(va0, vb, c03); c13 = _mm256_fmadd_ps(va1, vb, c13); c23 = _mm256_fmadd_ps(va2, vb, c23);
+        vb = _mm256_loadu_ps(b0);
+        c00 = _mm256_fmadd_ps(va0, vb, c00);
+        c10 = _mm256_fmadd_ps(va1, vb, c10);
+        c20 = _mm256_fmadd_ps(va2, vb, c20);
 
-        p += 8;
-        a0 += 8; a1 += 8; a2 += 8;
-        b0 += 8; b1 += 8; b2 += 8; b3 += 8;
+        vb = _mm256_loadu_ps(b1);
+        c01 = _mm256_fmadd_ps(va0, vb, c01);
+        c11 = _mm256_fmadd_ps(va1, vb, c11);
+        c21 = _mm256_fmadd_ps(va2, vb, c21);
+
+        vb = _mm256_loadu_ps(b2);
+        c02 = _mm256_fmadd_ps(va0, vb, c02);
+        c12 = _mm256_fmadd_ps(va1, vb, c12);
+        c22 = _mm256_fmadd_ps(va2, vb, c22);
+
+        vb = _mm256_loadu_ps(b3);
+        c03 = _mm256_fmadd_ps(va0, vb, c03);
+        c13 = _mm256_fmadd_ps(va1, vb, c13);
+        c23 = _mm256_fmadd_ps(va2, vb, c23);
+
+        p += 8;a0 += 8;a1+= 8;a2+= 8;
+        b0 += 8; b1+= 8; b2+= 8; b3+= 8;
     }
 
     auto hsum = [](__m256 v) -> float {
@@ -119,11 +137,9 @@ static inline void gemm_microkernel_3x4(
     }
 }
 
-void matmul_optimized(const float* A, 
-                      const float* B, 
-                      float* C,
-                      int M, int N, int K, 
-                      int lda, int ldb, int ldc) {
+void matmul_optimized(const float* A, const float* B, float* C,
+                      int M, int N, int K, int lda, int ldb, int ldc){
+
     constexpr int MC = 120;
     constexpr int NC = 128;
     constexpr int KC = 256;
@@ -140,19 +156,16 @@ void matmul_optimized(const float* A,
                 for(; i+2 < mc; i+=3) {
                     int j = 0;
                     for(; j+3 < nc; j+=4) {
-                        gemm_microkernel_3x4(
-                            A + static_cast<int64_t>(ic + i + 0) * lda + pc,
-                            A + static_cast<int64_t>(ic + i + 1) * lda + pc,
-                            A + static_cast<int64_t>(ic + i + 2) * lda + pc,
-                            B + static_cast<int64_t>(jc + j + 0) * ldb + pc,
-                            B + static_cast<int64_t>(jc + j + 1) * ldb + pc,
-                            B + static_cast<int64_t>(jc + j + 2) * ldb + pc,
-                            B + static_cast<int64_t>(jc + j + 3) * ldb + pc,
-                            C + static_cast<int64_t>(ic + i + 0) * ldc + (jc+j),
-                            C + static_cast<int64_t>(ic + i + 1) * ldc + (jc+j),
-                            C + static_cast<int64_t>(ic + i + 2) * ldc + (jc+j),
-                            kc, beta_zero
-                        );
+                        helper_3x4(A + static_cast<int64_t>(ic + i + 0) * lda + pc,
+                                    A + static_cast<int64_t>(ic + i + 1) * lda + pc,
+                                    A + static_cast<int64_t>(ic + i + 2) * lda + pc,
+                                    B + static_cast<int64_t>(jc + j + 0) * ldb + pc,
+                                    B + static_cast<int64_t>(jc + j + 1) * ldb + pc,
+                                    B + static_cast<int64_t>(jc + j + 2) * ldb + pc,
+                                    B + static_cast<int64_t>(jc + j + 3) * ldb + pc,
+                                    C + static_cast<int64_t>(ic + i + 0) * ldc + (jc+j),
+                                    C + static_cast<int64_t>(ic + i + 1) * ldc + (jc+j),
+                                    C + static_cast<int64_t>(ic + i + 2) * ldc + (jc+j),kc, beta_zero);
                     }
                     for(; j < nc; ++j) {
                         for(int r = 0; r < 3; ++r) {
